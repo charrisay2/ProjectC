@@ -6,7 +6,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Provider, useDispatch, useSelector } from "react-redux";
-import { store, RootState } from "./redux/store";
+import { store, RootState, AppDispatch } from "./redux/store"; // Thêm AppDispatch
+import { fetchCurrentUser } from "./redux/slices/authSlice"; // Thêm dòng này
 import Login from "./components/Login";
 import MainLayout from "./layouts/MainLayout";
 import Home from "./components/Home";
@@ -22,8 +23,6 @@ import Grades from "./components/Grades";
 import Finance from "./components/Finance";
 import CourseRegistration from "./components/student/CourseRegistration";
 import Profile from "./components/Profile";
-import { User, UserRole } from "./types";
-// Đã xóa import mockData ở đây!
 
 export type Module =
   | "home"
@@ -41,21 +40,32 @@ export type Module =
   | "profile";
 
 function AppContent() {
+  const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
   const [activeModule, setActiveModule] = useState<Module>("home");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    const initApp = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        // Đợi gọi API lấy thông tin xong mới hiển thị web
+        await dispatch(fetchCurrentUser());
+      }
+      setIsInitializing(false);
+    };
 
-  if (isLoading) {
+    initApp();
+  }, [dispatch]);
+
+  if (isInitializing) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-bg-main">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium">Đang tải hệ thống...</p>
+          <p className="text-slate-500 font-medium">
+            Đang tải dữ liệu hệ thống...
+          </p>
         </div>
       </div>
     );
